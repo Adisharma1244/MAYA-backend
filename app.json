@@ -1,48 +1,51 @@
 {
   "expo": {
-    "name": "MAYA",
-    "slug": "MAYA",
+    "name": "Wildcard",
+    "slug": "wildcard-maya",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "maya",
+    "icon": "./assets/images/newlogo.jpeg",
+    "scheme": "Wildcard",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/newlogo.jpeg",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#000000",
+        "foregroundImage": "./assets/images/newlogo.jpeg"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "package": "com.adisharma111.MAYA"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/newlogo.jpeg"
     },
     "plugins": [
       "expo-router",
+      "expo-dev-client",
       [
-        "expo-splash-screen",
+        "react-native-google-mobile-ads",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "androidAppId": "ca-app-pub-4939123118848020~3081594567",
+          "iosAppId": "ca-app-pub-4939123118848020~3081594567"
         }
       ]
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0ed04e8a-136a-4d43-bdd8-c96cdeb914ee"
+      }
     }
   }
 }

@@ -1,0 +1,98 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background: #0d0d0d;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Chat Area */
+.chat-container {
+  flex: 1;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Messages */
+.message {
+  padding: 10px 15px;
+  border-radius: 15px;
+  margin: 5px 0;
+  max-width: 75%;
+  word-wrap: break-word;
+}
+
+.user {
+  background: #6c63ff;
+  align-self: flex-end;
+}
+
+.bot {
+  background: #333;
+  align-self: flex-start;
+}
+
+/* Welcome */
+.welcome {
+  text-align: center;
+  margin: auto;
+}
+
+/* 🔥 INPUT FIX (MOST IMPORTANT) */
+.input-container {
+  position: sticky;
+  bottom: 0;
+  background: #0d0d0d;
+  padding: 10px;
+}
+
+/* Input Box */
+.input-box {
+  background: #1a1a1a;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+}
+
+.input-box input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 16px;
+}
+
+.input-box button {
+  background: transparent;
+  border: none;
+  color: #6c63ff;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* 📱 MOBILE RESPONSIVE */
+@media (max-width: 600px) {
+  .message {
+    max-width: 85%;
+    font-size: 14px;
+  }
+
+  .welcome h1 {
+    font-size: 20px;
+  }
+
+  .input-box {
+    padding: 8px 12px;
+  }
+}
