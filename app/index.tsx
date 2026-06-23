@@ -14,18 +14,13 @@ import {
   BannerAd,
   BannerAdSize,
   InterstitialAd,
-  TestIds,
 } from 'react-native-google-mobile-ads';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ── AD UNIT IDs ──────────────────────────────────────────────────
-const BANNER_AD_UNIT_ID = 
-  process.env.EXPO_PUBLIC_BANNER_AD_ID ?? 'ca-app-pub-4939123118848020/6839283859';
-
-const INTERSTITIAL_AD_UNIT_ID = 
-  process.env.EXPO_PUBLIC_INTERSTITIAL_AD_ID ?? 'ca-app-pub-4939123118848020/7062645130';
-
-const MSG_AD_INTERVAL = 10;
+const BANNER_AD_UNIT_ID       = 'ca-app-pub-4939123118848020/6839283859';
+const INTERSTITIAL_AD_UNIT_ID = 'ca-app-pub-4939123118848020/7062645130';
+const MSG_AD_INTERVAL         = 5;
 
 // ── WHO IS WHO ───────────────────────────────────────────────────
 const AI = {
@@ -175,21 +170,18 @@ function ProfileModal({ visible, onClose, onSwitch, gender }: {
             <Text style={p.profileName}>{ai.name}</Text>
             <Text style={[p.onlineStatus, { color: ai.color }]}>● Online</Text>
           </View>
-
           <View style={p.section}>
             <Text style={[p.sectionLabel, { color: ai.color }]}>ABOUT</Text>
             <View style={p.sectionBox}>
               <Text style={p.sectionValue}>{ai.about}</Text>
             </View>
           </View>
-
           <View style={p.section}>
             <Text style={[p.sectionLabel, { color: ai.color }]}>STATUS</Text>
             <View style={p.sectionBox}>
               <Text style={p.sectionValue}>{ai.status}</Text>
             </View>
           </View>
-
           <View style={p.section}>
             <Text style={[p.sectionLabel, { color: ai.color }]}>INFO</Text>
             <View style={p.sectionBox}>
@@ -201,7 +193,6 @@ function ProfileModal({ visible, onClose, onSwitch, gender }: {
               ))}
             </View>
           </View>
-
           <TouchableOpacity
             style={[p.switchBtn, { borderColor: ai.color }]}
             onPress={onSwitch}
@@ -219,13 +210,14 @@ function ProfileModal({ visible, onClose, onSwitch, gender }: {
 export default function ChatScreen() {
   const router = useRouter();
 
-  const [gender,         setGender]         = useState<Gender>('male');
-  const [messages,       setMessages]       = useState<Message[]>([]);
-  const [input,          setInput]          = useState('');
-  const [typing,         setTyping]         = useState(false);
-  const [profileOpen,    setProfileOpen]    = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [historyError,   setHistoryError]   = useState('');
+  const [gender,         setGender]        = useState<Gender>('male');
+  const [messages,       setMessages]      = useState<Message[]>([]);
+  const [input,          setInput]         = useState('');
+  const [typing,         setTyping]        = useState(false);
+  const [profileOpen,    setProfileOpen]   = useState(false);
+  const [loadingHistory, setLoadingHistory]= useState(true);
+  const [historyError,   setHistoryError]  = useState('');
+  const [appReady,       setAppReady]      = useState(false);
 
   // ── Pagination ────────────────────────────────────────────────
   const [loadingMore, setLoadingMore] = useState(false);
@@ -233,43 +225,59 @@ export default function ChatScreen() {
   const limitRef      = useRef(PAGE_LIMIT);
   const isFetchingRef = useRef(false);
 
-  // ✅ FIX: appReady ensures user_id + gender are loaded before sending
-  const [appReady, setAppReady] = useState(false);
-
   const userIdRef = useRef('');
   const genderRef = useRef<Gender>('male');
   const ai        = AI[gender];
 
   // ── Ad state ──────────────────────────────────────────────────
   const adLoadedRef      = useRef(false);
-  const [bannerVisible,  setBannerVisible]  = useState(true);
+  const [bannerVisible,  setBannerVisible] = useState(true);
   const msgsSinceAdRef   = useRef(0);
   const pendingActionRef = useRef<(() => void) | null>(null);
+  const retryTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Load & auto-reload interstitial ───────────────────────────
   useEffect(() => {
     const onLoaded = interstitialAd.addAdEventListener(AdEventType.LOADED, () => {
       console.log('✅ Interstitial ad LOADED');
       adLoadedRef.current = true;
+      // Clear any pending retry timer since ad loaded successfully
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
     });
+
     const onOpened = interstitialAd.addAdEventListener(AdEventType.OPENED, () => {
       console.log('📺 Interstitial ad OPENED');
     });
+
     const onClosed = interstitialAd.addAdEventListener(AdEventType.CLOSED, () => {
-      console.log('❌ Interstitial ad CLOSED');
+      console.log('✅ Interstitial ad CLOSED');
       adLoadedRef.current = false;
-      interstitialAd.load();
+      // Wait 2 seconds then reload
+      retryTimerRef.current = setTimeout(() => {
+        interstitialAd.load();
+      }, 2000);
+      // Run pending action
       if (pendingActionRef.current) {
         pendingActionRef.current();
         pendingActionRef.current = null;
       }
     });
+
     const onError = interstitialAd.addAdEventListener(AdEventType.ERROR, (error) => {
-      console.log('💥 Interstitial ad ERROR:', error);
+      console.log('💥 Interstitial ad ERROR:', error.message);
       adLoadedRef.current = false;
-      interstitialAd.load();
+      // ✅ KEY FIX: Wait 30 seconds before retrying — stops spam loop
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = setTimeout(() => {
+        console.log('🔄 Retrying interstitial ad load...');
+        interstitialAd.load();
+      }, 30000);
     });
 
+    // Initial load
     interstitialAd.load();
     console.log('🔄 Interstitial ad loading started...');
 
@@ -278,6 +286,7 @@ export default function ChatScreen() {
       onOpened();
       onClosed();
       onError();
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
   }, []);
 
@@ -320,8 +329,6 @@ export default function ChatScreen() {
       userIdRef.current = uid;
       console.log('👤 User ID:', uid);
       console.log('👤 Gender:', g);
-
-      // ✅ Mark app ready ONLY after user_id and gender are set
       setAppReady(true);
 
       const cached = await AsyncStorage.getItem('msgs_' + g);
@@ -394,17 +401,10 @@ export default function ChatScreen() {
   const send = useCallback(async () => {
     const text = input.trim();
     if (!text || typing) return;
-
-    // ✅ FIX: Block send if user_id not loaded yet
     if (!appReady || !userIdRef.current) {
       console.warn('⚠️ App not ready yet — user_id is empty!');
       return;
     }
-
-    console.log('🚀 Sending message...');
-    console.log('🆔 user_id:', userIdRef.current);
-    console.log('👤 gender:', genderRef.current);
-    console.log('💬 message:', text);
 
     const userMsg: Message = { id: `${Date.now()}_u`, text, sender: 'user' };
     const next = [userMsg, ...messages];
@@ -418,7 +418,7 @@ export default function ChatScreen() {
     console.log(`📨 Messages since last ad: ${msgsSinceAdRef.current}/${MSG_AD_INTERVAL}`);
     if (msgsSinceAdRef.current >= MSG_AD_INTERVAL) {
       msgsSinceAdRef.current = 0;
-      console.log('🎬 Triggering ad after 10 messages!');
+      console.log('🎬 Triggering interstitial ad!');
       showAdThen();
     }
 
@@ -490,7 +490,7 @@ export default function ChatScreen() {
     if (!hasMore && messages.length > 0) {
       return (
         <View style={s.loadMoreContainer}>
-          <Text style={s.endOfChatText}>🎉 Beginning of your conversation</Text>
+          <Text style={s.endOfChatText}> Beginning of your conversation</Text>
         </View>
       );
     }
@@ -503,7 +503,6 @@ export default function ChatScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-
         {/* ── TOP BAR ──────────────────────────────────────── */}
         <View style={s.topBar}>
           <TouchableOpacity
@@ -598,8 +597,14 @@ export default function ChatScreen() {
               unitId={BANNER_AD_UNIT_ID}
               size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
               requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-              onAdLoaded={() => setBannerVisible(true)}
-              onAdFailedToLoad={() => setBannerVisible(false)}
+              onAdLoaded={() => {
+                console.log('✅ Banner ad LOADED');
+                setBannerVisible(true);
+              }}
+              onAdFailedToLoad={(e) => {
+                console.log('💥 Banner ad FAILED:', e.message);
+                setBannerVisible(false);
+              }}
             />
           </View>
         )}
